@@ -1,5 +1,16 @@
 package queries
 
+import (
+	"log"
+)
+
+const (
+	SelectKeyWord = "SELECT"
+	InsertKeyWord = "INSERT INTO"
+	UpdateKeyWord = "UPDATE"
+	DeleteKeyWord = "DELETE "
+)
+
 type SQLQueryBuilder struct {
 	table      string
 	columns    []string
@@ -21,7 +32,7 @@ func NewSQLQueryBuilder(table string) *SQLQueryBuilder {
 }
 
 func (qb *SQLQueryBuilder) Select(columns ...string) *SQLQueryBuilder {
-	qb.query += "SELECT "
+	qb.query += SelectKeyWord
 	qb.columns = columns
 	return qb
 }
@@ -38,7 +49,7 @@ func (qb *SQLQueryBuilder) Where(condition string, arg any) *SQLQueryBuilder {
 }
 
 func (qb *SQLQueryBuilder) InsertInto(table string, columns ...string) *SQLQueryBuilder {
-	qb.query += "INSERT INTO "
+	qb.query += InsertKeyWord
 	qb.table = table
 	qb.columns = columns
 	return qb
@@ -50,7 +61,7 @@ func (qb *SQLQueryBuilder) Values(values ...any) *SQLQueryBuilder {
 }
 
 func (qb *SQLQueryBuilder) Update(table string) *SQLQueryBuilder {
-	qb.query += "UPDATE "
+	qb.query += UpdateKeyWord
 	qb.table = table
 	return qb
 }
@@ -61,15 +72,23 @@ func (qb *SQLQueryBuilder) Set(column string, value any) *SQLQueryBuilder {
 	return qb
 }
 
+func (qb *SQLQueryBuilder) Delete() *SQLQueryBuilder {
+	qb.query += DeleteKeyWord
+	return qb
+}
+
 func (qb *SQLQueryBuilder) Build() (string, []any) {
 	switch qb.query {
-	case "SELECT ":
+	case SelectKeyWord:
 		return qb.buildSelect()
-	case "INSERT INTO ":
+	case InsertKeyWord:
 		return qb.buildInsert()
-	case "UPDATE ":
+	case UpdateKeyWord:
 		return qb.buildUpdate()
+	case DeleteKeyWord:
+		return qb.buildDelete()
 	default:
+		log.Println("Unsupported query type")
 		return "", nil
 	}
 }
@@ -79,22 +98,11 @@ func (qb *SQLQueryBuilder) buildSelect() (string, []any) {
 		qb.query += "*"
 	}
 
-	if len(qb.columns) > 0 {
-		qb.query += qb.columns[0]
-		for _, column := range qb.columns[1:] {
-			qb.query += ", " + column
-		}
-	}
+	AddColumnsToSQLQueryString(&qb.query, qb.columns)
 
 	qb.query += " FROM " + qb.table
 
-	if len(qb.conditions) > 0 {
-		qb.query += " WHERE " + qb.conditions[0]
-
-		for _, condition := range qb.conditions[1:] {
-			qb.query += " AND " + condition
-		}
-	}
+	AddConditionsToSQLQueryString(&qb.query, qb.conditions)
 
 	qb.query += ";"
 	return qb.query, qb.args
@@ -103,22 +111,19 @@ func (qb *SQLQueryBuilder) buildSelect() (string, []any) {
 func (qb *SQLQueryBuilder) buildInsert() (string, []any) {
 	qb.query += qb.table
 
-	if len(qb.columns) != 0 {
-		qb.query += "("
-		qb.query += qb.columns[0]
-		for _, column := range qb.columns[1:] {
-			qb.query += ", " + column
-		}
-		qb.query += ")"
-	}
+	qb.query += "("
+	AddColumnsToSQLQueryString(&qb.query, qb.columns)
+	qb.query += ")"
 
 	qb.query += " VALUES ("
 	qb.query += "?"
+
 	for range qb.values[1:] {
 		qb.query += ", " + "?"
 	}
 
 	qb.query += ");"
+
 	return qb.query, qb.values
 }
 
@@ -134,14 +139,18 @@ func (qb *SQLQueryBuilder) buildUpdate() (string, []any) {
 		qb.query += ", " + col + " = ?"
 	}
 
-	if len(qb.conditions) > 0 {
-		qb.query += " WHERE " + qb.conditions[0]
-
-		for _, condition := range qb.conditions[1:] {
-			qb.query += " AND " + condition
-		}
-	}
+	AddConditionsToSQLQueryString(&qb.query, qb.conditions)
 
 	qb.query += ";"
 	return qb.query, append(qb.values, qb.args...)
+}
+
+func (qb *SQLQueryBuilder) buildDelete() (string, []any) {
+	qb.query += "FROM "
+	qb.query += qb.table
+
+	AddConditionsToSQLQueryString(&qb.query, qb.conditions)
+
+	qb.query += ";"
+	return qb.query, qb.args
 }
