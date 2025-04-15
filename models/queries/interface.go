@@ -8,5 +8,8 @@ type QueryBuilder interface {
 	InsertInto(table string, columns ...string) QueryBuilder
 	Values(values ...any) QueryBuilder
 
-	BuildSelect() (string, []any)
+	Update(table string) QueryBuilder
+	Set(column string, value any) QueryBuilder
+
+	Build() (string, []any)
 }

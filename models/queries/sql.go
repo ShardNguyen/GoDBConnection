@@ -1,15 +1,11 @@
 package queries
 
-import (
-	"fmt"
-	"log"
-)
-
 type SQLQueryBuilder struct {
 	table      string
 	columns    []string
 	conditions []string
 	args       []any
+	values     []any
 	query      string
 }
 
@@ -19,11 +15,13 @@ func NewSQLQueryBuilder(table string) *SQLQueryBuilder {
 		columns:    []string{},
 		conditions: []string{},
 		args:       []any{},
+		values:     []any{},
 		query:      "",
 	}
 }
 
 func (qb *SQLQueryBuilder) Select(columns ...string) *SQLQueryBuilder {
+	qb.query += "SELECT "
 	qb.columns = columns
 	return qb
 }
@@ -40,42 +38,43 @@ func (qb *SQLQueryBuilder) Where(condition string, arg any) *SQLQueryBuilder {
 }
 
 func (qb *SQLQueryBuilder) InsertInto(table string, columns ...string) *SQLQueryBuilder {
+	qb.query += "INSERT INTO "
 	qb.table = table
 	qb.columns = columns
 	return qb
 }
 
 func (qb *SQLQueryBuilder) Values(values ...any) *SQLQueryBuilder {
-	qb.args = values
+	qb.values = values
 	return qb
 }
 
-func (qb *SQLQueryBuilder) BuildInsert() (string, []any) {
-	if len(qb.columns) == 0 {
-		log.Println("No columns specified for insert")
-		return "", nil
-	}
-
-	qb.query = "INSERT INTO " + qb.table + " ("
-
-	qb.query += qb.columns[0]
-	for _, column := range qb.columns[1:] {
-		qb.query += ", " + column
-	}
-
-	qb.query += ") VALUES ("
-	qb.query += qb.args[0].(string)
-	for _, arg := range qb.args[1:] {
-		qb.query += ", " + fmt.Sprintf("%d", arg)
-	}
-
-	qb.query += ");"
-	return qb.query, qb.args
+func (qb *SQLQueryBuilder) Update(table string) *SQLQueryBuilder {
+	qb.query += "UPDATE "
+	qb.table = table
+	return qb
 }
 
-func (qb *SQLQueryBuilder) BuildSelect() (string, []any) {
-	qb.query = "SELECT "
+func (qb *SQLQueryBuilder) Set(column string, value any) *SQLQueryBuilder {
+	qb.columns = append(qb.columns, column)
+	qb.values = append(qb.values, value)
+	return qb
+}
 
+func (qb *SQLQueryBuilder) Build() (string, []any) {
+	switch qb.query {
+	case "SELECT ":
+		return qb.buildSelect()
+	case "INSERT INTO ":
+		return qb.buildInsert()
+	case "UPDATE ":
+		return qb.buildUpdate()
+	default:
+		return "", nil
+	}
+}
+
+func (qb *SQLQueryBuilder) buildSelect() (string, []any) {
 	if len(qb.columns) == 0 {
 		qb.query += "*"
 	}
@@ -91,6 +90,7 @@ func (qb *SQLQueryBuilder) BuildSelect() (string, []any) {
 
 	if len(qb.conditions) > 0 {
 		qb.query += " WHERE " + qb.conditions[0]
+
 		for _, condition := range qb.conditions[1:] {
 			qb.query += " AND " + condition
 		}
@@ -98,4 +98,50 @@ func (qb *SQLQueryBuilder) BuildSelect() (string, []any) {
 
 	qb.query += ";"
 	return qb.query, qb.args
+}
+
+func (qb *SQLQueryBuilder) buildInsert() (string, []any) {
+	qb.query += qb.table
+
+	if len(qb.columns) != 0 {
+		qb.query += "("
+		qb.query += qb.columns[0]
+		for _, column := range qb.columns[1:] {
+			qb.query += ", " + column
+		}
+		qb.query += ")"
+	}
+
+	qb.query += " VALUES ("
+	qb.query += "?"
+	for range qb.values[1:] {
+		qb.query += ", " + "?"
+	}
+
+	qb.query += ");"
+	return qb.query, qb.values
+}
+
+func (qb *SQLQueryBuilder) buildUpdate() (string, []any) {
+	qb.query += qb.table + " SET "
+
+	if len(qb.columns) == 0 {
+		return "", nil
+	}
+
+	qb.query += qb.columns[0] + " = ?"
+	for _, col := range qb.columns[1:] {
+		qb.query += ", " + col + " = ?"
+	}
+
+	if len(qb.conditions) > 0 {
+		qb.query += " WHERE " + qb.conditions[0]
+
+		for _, condition := range qb.conditions[1:] {
+			qb.query += " AND " + condition
+		}
+	}
+
+	qb.query += ";"
+	return qb.query, append(qb.values, qb.args...)
 }
