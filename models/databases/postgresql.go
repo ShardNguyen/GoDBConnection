@@ -1,13 +1,13 @@
 package database
 
 import (
-	connection "GoDBConnection/models/connections"
+	connections "GoDBConnection/models/connections"
 
 	_ "github.com/lib/pq"
 )
 
 type PostgresDB struct {
-	Connection *connection.PostgresqlConnection
+	Connection *connections.PostgresqlConnection
 }
 
 func (pg *PostgresDB) InsertRow(query string, args ...interface{}) (int64, error) {
