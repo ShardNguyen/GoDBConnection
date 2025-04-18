@@ -59,14 +59,11 @@ func (qb *PostgresSQLQueryBuilder) Delete() *PostgresSQLQueryBuilder {
 
 func (qb *PostgresSQLQueryBuilder) Build() (string, []any) {
 	query, args := qb.queryBuilder.Build()
-	// TO DO: Add numbers to the placeholders in the query
-	// Input: "SELECT * FROM users WHERE id = $ and name = $"
-	// Output: "SELECT * FROM users WHERE id = $1 and name = $2"
-	addIndexPlaceholders(&query)
+	addIndexToPlaceholders(&query)
 	return query, args
 }
 
-func addIndexPlaceholders(query *string) {
+func addIndexToPlaceholders(query *string) {
 	index := 1
 	for i := 0; i < len(*query); i++ {
 		if (*query)[i] == '$' {
