@@ -1,26 +1,17 @@
 package params
 
-import (
-	"fmt"
-)
-
 type PostgresSQLQueryParams struct {
-	counter int
 }
 
 func NewPostgresSQLQueryParams() *PostgresSQLQueryParams {
-	return &PostgresSQLQueryParams{
-		counter: 1,
-	}
+	return &PostgresSQLQueryParams{}
 }
 
 func (p *PostgresSQLQueryParams) AddPlaceholders(query *string, columns []string) {
-	*query += "$" + fmt.Sprint(p.counter)
-	p.counter++
+	*query += "$"
 
 	for i := 2; i <= len(columns); i++ {
-		*query += ", $" + fmt.Sprint(p.counter)
-		p.counter++
+		*query += ", $"
 	}
 }
 
@@ -29,12 +20,10 @@ func (p *PostgresSQLQueryParams) AddSetColumns(query *string, columns []string) 
 		return
 	}
 
-	*query += columns[0] + " = $" + fmt.Sprint(p.counter)
-	p.counter++
+	*query += columns[0] + " = $"
 
 	for i := 1; i < len(columns); i++ {
-		*query += ", " + columns[i] + " = $" + fmt.Sprint(p.counter)
-		p.counter++
+		*query += ", " + columns[i] + " = $"
 	}
 }
 
@@ -43,15 +32,9 @@ func (p *PostgresSQLQueryParams) AddConditions(query *string, conditions []strin
 		return
 	}
 
-	*query += conditions[0] + "$" + fmt.Sprint(p.counter)
-	p.counter++
+	*query += conditions[0] + "$"
 
 	for i := 1; i < len(conditions); i++ {
-		*query += ", " + conditions[i] + " = $" + fmt.Sprint(p.counter)
-		p.counter++
+		*query += ", " + conditions[i] + " = $"
 	}
-}
-
-func (p *PostgresSQLQueryParams) ResetCounter() {
-	p.counter = 1
 }

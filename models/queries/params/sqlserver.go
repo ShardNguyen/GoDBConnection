@@ -14,7 +14,7 @@ func (s *SQLServerParams) AddPlaceholders(query *string, columns []string) {
 		return
 	}
 
-	*query += ":" + fmt.Sprint(columns[0])
+	*query += "@" + fmt.Sprint(columns[0])
 
 	for i := 1; i < len(columns); i++ {
 		*query += ", @" + fmt.Sprint(columns[1])

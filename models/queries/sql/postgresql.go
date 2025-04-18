@@ -1,6 +1,9 @@
 package sqlbuilder
 
-import "GoDBConnection/models/queries/params"
+import (
+	"GoDBConnection/models/queries/params"
+	"fmt"
+)
 
 type PostgresSQLQueryBuilder struct {
 	queryBuilder DefaultSQLQueryBuilder
@@ -56,6 +59,19 @@ func (qb *PostgresSQLQueryBuilder) Delete() *PostgresSQLQueryBuilder {
 
 func (qb *PostgresSQLQueryBuilder) Build() (string, []any) {
 	query, args := qb.queryBuilder.Build()
-
+	// TO DO: Add numbers to the placeholders in the query
+	// Input: "SELECT * FROM users WHERE id = $ and name = $"
+	// Output: "SELECT * FROM users WHERE id = $1 and name = $2"
+	addIndexPlaceholders(&query)
 	return query, args
+}
+
+func addIndexPlaceholders(query *string) {
+	index := 1
+	for i := 0; i < len(*query); i++ {
+		if (*query)[i] == '$' {
+			*query = (*query)[:i+1] + fmt.Sprint(index) + (*query)[i+1:]
+			index++
+		}
+	}
 }
