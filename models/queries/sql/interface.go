@@ -1,4 +1,4 @@
-package sqlbuilder
+package sqlqueries
 
 type SQLQueryBuilder interface {
 	Select(columns ...string) SQLQueryBuilder
@@ -13,6 +13,9 @@ type SQLQueryBuilder interface {
 
 	Delete() SQLQueryBuilder
 
+	Create() SQLQueryBuilder
+	Drop() SQLQueryBuilder
+	Table(table string) SQLQueryBuilder
 	// This function builds and returns the SQL query and arguments.
 	// It will return nothing if the query is not valid.
 	Build() (string, []any)

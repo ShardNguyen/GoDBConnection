@@ -1,4 +1,4 @@
-package database
+package sqldbsv
 
 // Database is an interface that defines methods for interacting with a database.
 type Database interface {

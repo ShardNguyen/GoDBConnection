@@ -1,7 +1,7 @@
-package sqlbuilder
+package sqlqueries
 
 import (
-	"GoDBConnection/models/queries/params"
+	"GoDBConnection/models/queries/sql/params"
 	"fmt"
 )
 
@@ -9,9 +9,9 @@ type PostgresSQLQueryBuilder struct {
 	queryBuilder DefaultSQLQueryBuilder
 }
 
-func NewPostgresSQLQueryBuilder(table string) *PostgresSQLQueryBuilder {
+func NewPostgresSQLQueryBuilder() *PostgresSQLQueryBuilder {
 	NewPostgresSQLQueryBuilder := &PostgresSQLQueryBuilder{
-		queryBuilder: *NewSQLQueryBuilder(table),
+		queryBuilder: *NewSQLQueryBuilder(),
 	}
 	NewPostgresSQLQueryBuilder.queryBuilder.param = params.NewPostgresSQLQueryParams()
 	return NewPostgresSQLQueryBuilder
@@ -57,14 +57,21 @@ func (qb *PostgresSQLQueryBuilder) Delete() *PostgresSQLQueryBuilder {
 	return qb
 }
 
-func (qb *PostgresSQLQueryBuilder) Build() (string, []any) {
-	query, args := qb.queryBuilder.Build()
-	addIndexToPlaceholders(&query)
-	return query, args
+// Postgres's Build function constructs the SQL query and its arguments then adds index to the placeholders.
+func (qb *PostgresSQLQueryBuilder) Build() (*string, []any, error) {
+	query, args, err := qb.queryBuilder.Build()
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	addIndexToPlaceholders(query)
+	return query, args, nil
 }
 
 func addIndexToPlaceholders(query *string) {
 	index := 1
+	// DO NOT CHANGE THIS TO IN RANGE
 	for i := 0; i < len(*query); i++ {
 		if (*query)[i] == '$' {
 			*query = (*query)[:i+1] + fmt.Sprint(index) + (*query)[i+1:]
